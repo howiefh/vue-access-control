@@ -8,6 +8,7 @@
       <button type="button" @click="() => show = 500">500</button>
     </div>
     <div v-show="show === 1">
+      {{$getUserId()}}
       permissions:
       {{permissions}}
       roles:

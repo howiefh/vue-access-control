@@ -1,7 +1,7 @@
 {
   "name": "@howiefh/vue-access-control",
   "description": "A Access Control Plugin for Vue.js.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": "dist/vue-access-control.umd.js",
   "private": false,
   "scripts": {

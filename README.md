@@ -113,3 +113,12 @@ export default {
 }
 </script>
 ```
+
+## Demo
+
+```
+git clone https://github.com/howiefh/vue-access-control.git
+cd vue-access-control
+yarn install
+yarn serve
+```

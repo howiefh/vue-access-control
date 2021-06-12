@@ -27,6 +27,7 @@ const install = function (Vue, options = defaultOptions) {
   }
 
   Vue.$access = async () => await store.dispatch('access', options)
+  Vue.prototype.$getUserId = () => store.getters.userId
 
   function hasPermission(permission) {
     if (!permission) return true
@@ -88,10 +89,10 @@ const install = function (Vue, options = defaultOptions) {
     return store.getters.roles
   }
 
-  const accessFuncs = [hasPermission, lacksPermission, hasAnyPermissions, hasAllPermissions, hasRole, lacksRole, hasAnyRoles, hasAllRoles]
+  const accessFuncs = { hasPermission, lacksPermission, hasAnyPermissions, hasAllPermissions, hasRole, lacksRole, hasAnyRoles, hasAllRoles }
 
-  accessFuncs.forEach(func => {
-    const funcName = func.name
+  Object.keys(accessFuncs).forEach(funcName => {
+    const func = accessFuncs[funcName]
     Vue.prototype['$' + funcName] = (v) => func(v)
 
     /* 权限指令 */
