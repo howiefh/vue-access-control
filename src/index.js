@@ -1,33 +1,20 @@
-import store from './store'
-import Error401 from './components/errorPage/401.vue'
-import Error403 from './components/errorPage/403.vue'
-import Error404 from './components/errorPage/404.vue'
-import Error500 from './components/errorPage/500.vue'
+import accessStore from './store/access'
+import WildcardPermission from "./WildcardPermission"
 
 const defaultOptions = {
-  enableErrorComponent: true
+  enableWildcard: false
 }
 
 const install = function (Vue, options = defaultOptions) {
-  if (typeof options === 'function') {
-		options = Object.assign({}, defaultOptions, { access: options })
-	}
-
-  if (options.enableErrorComponent) {
-    const components = [
-      Error401,
-      Error403,
-      Error404,
-      Error500,
-    ]
-
-    components.map(component => {
-      Vue.component(component.name, component)
-    })
+  const { store } = options
+  if (!store) {
+    throw new Error('Dependency vuex was not found!')
   }
 
-  Vue.$access = async () => await store.dispatch('access', options)
-  Vue.prototype.$getUserId = () => store.getters.userId
+  store.registerModule('ac', accessStore)
+
+  Vue.$access = async () => await store.dispatch('ac/access', options)
+  Vue.prototype.$getUserId = () => store.getters['ac/userId']
 
   function hasPermission(permission) {
     if (!permission) return true
@@ -45,18 +32,28 @@ const install = function (Vue, options = defaultOptions) {
     if (!permissions || !permissions.length) return true
     const userPermissions = getUserPermissions()
     if (!userPermissions || !userPermissions.length) return false
-    return permissions.some(perm => userPermissions.includes(perm))
+    return permissions.some(perm => hasUserPermissions(userPermissions, perm))
   }
 
   function hasAllPermissions(permissions) {
     if (!permissions || !permissions.length) return true
     const userPermissions = getUserPermissions()
     if (!userPermissions || !userPermissions.length) return false
-    return permissions.every(perm => userPermissions.includes(perm))
+    return permissions.every(perm => hasUserPermissions(userPermissions, perm))
+  }
+
+  function hasUserPermissions(userPermissions, perm) {
+    if (options.enableWildcard) {
+      const userWildcardPermissions = store.getters['ac/wildcardPermissions'];
+      const wildcardPermission = new WildcardPermission(perm);
+      return userWildcardPermissions.some(p => p.implies(wildcardPermission))
+    } else {
+      return userPermissions.includes(perm);
+    }
   }
 
   function getUserPermissions() {
-    return store.getters.permissions
+    return store.getters['ac/permissions']
   }
 
   function hasRole(role) {
@@ -86,7 +83,7 @@ const install = function (Vue, options = defaultOptions) {
   }
 
   function getUserRoles() {
-    return store.getters.roles
+    return store.getters['ac/roles']
   }
 
   const accessFuncs = { hasPermission, lacksPermission, hasAnyPermissions, hasAllPermissions, hasRole, lacksRole, hasAnyRoles, hasAllRoles }
@@ -128,7 +125,7 @@ const install = function (Vue, options = defaultOptions) {
       console.debug('to', to)
       let userPermissions = getUserPermissions()
       if (!userPermissions) {
-        store.dispatch('access', options).then(() => {
+        store.dispatch('ac/access', options).then(() => {
           handleBeforeRouteEnter(to, from, next)
         }).catch (err=> {
           console.error(err)
@@ -144,13 +141,6 @@ const install = function (Vue, options = defaultOptions) {
 /* istanbul ignore if */
 if (typeof window !== 'undefined' && window.Vue) {
   install(window.Vue);
-}
-
-export {
-  Error401,
-  Error403,
-  Error404,
-  Error500,
 }
 
 export default {

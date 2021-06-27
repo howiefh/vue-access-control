@@ -1,55 +1,22 @@
-# vue-access-control
-
-## Install
-
-```
-npm install @howiefh/vue-access-control -S
-```
-
-## Quick Start
-
-Add plugin in vue 2.
-
-```
-import Vue from 'vue'
-import VueAccessControl from '@howiefh/vue-access-control'
-import axios from 'axios'
-
-// or simply
-// import store from './store'
-import Vuex from 'vuex'
-Vue.use(Vuex)
-const store = new Vuex.Store({})
-
-Vue.use(VueAccessControl, {
-  errorPage: '/403', // default: null. the path of error page. navigate to the error page when hasPermission(route.meta.permissions) is false.
-  enableWildcard: true, // default: false. see more about wildcard permissions: https://shiro.apache.org/permissions.html#wildcard-permissions
-  store,
-  access() {
-    return new Promise((resolve, reject) => {
-      axios.post('/api/permissions').then(response => {
-        const res = response.data
-        // data structure
-        // response.data:
-        // {"data":{"userId":"howiefh","permissions":["app", "menu", "user:query:*"], "roles": ["admin"]}}
-        if (!res.data) {
-          reject('res.data is null')
-        } else {
-          resolve(res.data)
-        }
-      }).catch(err => reject(err))
-    })
-  }
-})
-```
-
-## Usage
-
-Use functions or directives to check permissions
-
-```
 <template>
-  <div>
+  <div id="demo">
+    <div>
+      <button type="button" @click="() => show = 1">权限</button>
+      <button type="button" @click="() => show = 401">401</button>
+      <button type="button" @click="() => show = 403">403</button>
+      <button type="button" @click="() => show = 404">404</button>
+      <button type="button" @click="() => show = 500">500</button>
+    </div>
+    <div v-show="show === 0">
+      Home
+    </div>
+    <div v-show="show === 1">
+      {{$getUserId()}}
+      permissions:
+      {{permissions}}
+      roles:
+      {{roles}}
+      <br/>
     functions:
     <div v-show="$hasPermission('app')">$hasPermission('app')</div>
     <div v-show="$hasPermission(['app'])">$hasPermission(['app'])</div>
@@ -84,44 +51,49 @@ Use functions or directives to check permissions
     <div v-show="$hasPermission('user:query:*')">$hasPermission('user:query:*')</div>
     <div v-show="$hasPermission('user:query:1,2,3')">$hasPermission('user:query:1,2,3')</div>
     <div v-show="$lacksPermission('user:update')">$lacksPermission('user:update')</div>
+    </div>
+    <Error401 v-show="show === 401"/>
+    <Error403 v-show="show === 403"/>
+    <Error404 v-show="show === 404"/>
+    <Error500 v-show="show === 500"/>
   </div>
 </template>
 
 <script>
+import { Error401, Error403, Error404, Error500 } from './components/index'
+import { mapGetters } from 'vuex'
 
 export default {
-  name: 'App',
-  methods: {
-    foo() {
-      if (this.$hasPermission(['menu'])) {
-        this.$router.push({ path: '/menu' })
-      }
+  name: 'Demo',
+  data() {
+    return {
+      show: 1
     }
+  },
+  computed: {
+    ...mapGetters('ac', [
+      'permissions',
+      'roles'
+    ])
+  },
+  mounted() {
+    this.show = this.$route.name === 'Home' ? 0 : 1;
+  },
+  components: {
+    Error401,
+    Error403,
+    Error404,
+    Error500
   }
 }
 </script>
-```
 
-## Error Page
-
-You can also use the error page components provided in this plugin.
-
-```
-import { Error403 } from '@howiefh/vue-access-control/dist/error-page.umd'
-import '@howiefh/vue-access-control/dist/error-page.css'
-
-const routes = [{ path: '/403', name: '403', component: Error403 }]
-
-const router = new VueRouter({
-  routes
-})
-```
-
-## Demo
-
-```
-git clone https://github.com/howiefh/vue-access-control.git
-cd vue-access-control
-yarn install
-yarn serve
-```
+<style>
+#demo {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+}
+</style>
